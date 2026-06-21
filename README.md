@@ -133,3 +133,17 @@ Risky topics such as chest pain, difficulty breathing, overdose, suicidal though
 
 ## Future OpenAI Integration
 The code is structured so a future `OpenAIChatService` can implement `AiChatService` without changing the controller layer. The current configuration already includes placeholder environment variables for provider selection and OpenAI credentials.
+
+No OpenAI or external AI service is active by default. The current chatbot uses `RuleBasedAiChatService` only, so it does not generate AI API costs unless a future developer intentionally adds and enables an external AI provider.
+
+## Privacy and Consent
+
+This project handles healthcare-related user and patient information. A production version should include privacy notices, user consent records, access controls, and authorization rules before handling real patient data.
+
+Recommended future consent types:
+
+- Privacy Policy
+- Terms of Use
+- Data Processing Consent
+- Chatbot Disclaimer
+- Optional Marketing Consent
