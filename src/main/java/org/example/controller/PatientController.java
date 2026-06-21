@@ -1,92 +1,60 @@
 package org.example.controller;
 
-import org.example.model.Nurse;
-import org.example.model.User;
-import org.example.model.Patient;
-import org.example.model.Package;
-import org.example.repository.NurseRepository;
-import org.example.repository.PackageRepository;
-import org.example.repository.PatientRepository;
-import org.example.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
+import org.example.dto.PatientCreateRequest;
+import org.example.dto.PatientResponse;
+import org.example.dto.PatientUpdateRequest;
+import org.example.service.PatientService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Optional;
+import java.util.List;
 
 @RestController
-@RequestMapping("/api/patient")
+@RequestMapping("/api/patients")
 public class PatientController {
-    @Autowired
-    PatientRepository patientRepository;
-    @Autowired
-    UserRepository userRepository;
-    @Autowired
-    NurseRepository nurseRepository;
-    @Autowired
-    PackageRepository packageRepository;
+
+    private final PatientService patientService;
+
+    public PatientController(PatientService patientService) {
+        this.patientService = patientService;
+    }
 
     @GetMapping
-    public ResponseEntity<Object> allPatients() {
-        return new ResponseEntity<>(patientRepository.findAll(), HttpStatus.OK);
+    public ResponseEntity<List<PatientResponse>> allPatients() {
+        return ResponseEntity.ok(patientService.findAll());
     }
 
-    @PostMapping("/{userId}")
-    public ResponseEntity<Object> savePatient(@PathVariable Long userId, @RequestBody Patient patient) {
-        Optional<User> user = userRepository.findById(userId);
-
-        if (user.isEmpty())
-            return new ResponseEntity<>("User not found", HttpStatus.NOT_FOUND);
-
-        patient.setUser(user.get());
-
-        return new ResponseEntity<>(patientRepository.save(patient), HttpStatus.CREATED);
+    @GetMapping("/{id}")
+    public ResponseEntity<PatientResponse> patientById(@PathVariable Long id) {
+        return ResponseEntity.ok(patientService.findById(id));
     }
 
-    @PutMapping({"/{id}","/{id}/nurse/{nurseId}"})
-    public ResponseEntity<Object> updatePatient(
-            @PathVariable(name="id") Long userId,
-            @PathVariable(required = false) Long nurseId,
-            @RequestBody(required = false) Patient patient,
-            @RequestParam(required = false) Long packageId) {
-        Patient updatedPatient = patientRepository.findById(userId).get();
-        System.out.println(updatedPatient);
-        //Updating patient details through @requestbody parameters
-        if (patient !=null) {
-            if (patient.getNextOfKinName() != null)
-                updatedPatient.setNextOfKinName(patient.getNextOfKinName());
-            if (patient.getNextOfKinPhone() != null)
-                updatedPatient.setNextOfKinPhone(patient.getNextOfKinPhone());
-            if (patient.getMedicalRecords() != null)
-                updatedPatient.setMedicalRecords(patient.getMedicalRecords());
-            if (patient.getMedicalPrescriptions() != null)
-                updatedPatient.setMedicalPrescriptions(patient.getMedicalPrescriptions());
-            if (patient.getAdditionalNotes() != null)
-                updatedPatient.setAdditionalNotes(patient.getAdditionalNotes());
-//            if (patient.getStartDate() != null)
-            updatedPatient.setStartDate(patient.getStartDate());
-//            if (patient.getEndDate() != null)
-            updatedPatient.setEndDate(patient.getEndDate());
+    @PostMapping("/user/{userId}")
+    public ResponseEntity<PatientResponse> savePatient(@PathVariable Long userId, @Valid @RequestBody PatientCreateRequest request) {
+        if (!userId.equals(request.userId())) {
+            throw new IllegalArgumentException("Path userId and request userId must match.");
         }
-        //Update assigned nurseid through optional @pathVariable parameter
-        if(nurseId != null) {
-            Nurse nurse = nurseRepository.findById(nurseId).get();
-            updatedPatient.setNurse(nurse);
-        }
-
-        //Update package chosen through query parameters (@RequestParam)
-        if(packageId != null){
-            Package _package = packageRepository.findById(packageId).get();
-            updatedPatient.set_package(_package);
-        }
-        return new ResponseEntity<>(patientRepository.save(updatedPatient), HttpStatus.OK);
+        return ResponseEntity.status(HttpStatus.CREATED).body(patientService.create(request));
     }
-    @PutMapping({"/{patientId}/remove-nurse"})
-    public ResponseEntity<Object> updatePatient(@PathVariable Long patientId){
-        Patient patient = patientRepository.findById(patientId).get();
-        patient.setNurse(null);
-        return new ResponseEntity<>(patientRepository.save(patient),HttpStatus.OK);
-    };
 
+    @PutMapping("/{id}")
+    public ResponseEntity<PatientResponse> updatePatient(@PathVariable Long id, @Valid @RequestBody PatientUpdateRequest request) {
+        return ResponseEntity.ok(patientService.update(id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletePatient(@PathVariable Long id) {
+        patientService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
 }
+//            if (patient.getStartDate() != null)

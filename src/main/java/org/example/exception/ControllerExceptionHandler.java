@@ -1,56 +1,59 @@
 package org.example.exception;
 
-import org.springframework.http.HttpHeaders;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.context.request.WebRequest;
-import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-import java.util.*;
+import java.time.OffsetDateTime;
+import java.util.List;
 
-// @ControllerAdvice surrounds the Controllers to apply some common logic (as an Exception Resolver)
-// @ExceptionHandler is used across controllers to capture and respond to exceptions
 @RestControllerAdvice
-public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
+public class ControllerExceptionHandler {
 
-    // handle/trap errors produced by @GetMapping methods (e.g. @PathVariable receives an invalid value or id)
-    @ExceptionHandler (ResourceNotFoundException.class)
-    protected ResponseEntity<Object> handleResourceNotFoundException(ResourceNotFoundException ex){
-
-        Map<String, String> response = new HashMap<>();
-
-        response.put("error", ex.getMessage());
-
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-    }
-    @Override
-    protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, HttpHeaders httpHeaders, HttpStatusCode httpStatusCode, WebRequest request){
-        MessageNotReadableException msgNotReadable = new MessageNotReadableException();
-        Map<String,String> response = new HashMap<>();
-        response.put("error",msgNotReadable.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-    }
-    @Override
-    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, HttpHeaders httpHeaders, HttpStatusCode httpStatusCode, WebRequest request){
-
-        List<String> errors = new ArrayList<>();
-
-        for (FieldError error : ex.getBindingResult().getFieldErrors()) {
-            errors.add(error.getField() + ": " + error.getDefaultMessage());
-        }
-        Collections.sort(errors);   // formats the listed errors by alphabetical order
-        Map<String, List<String>> errorResponse = new HashMap<>();
-        errorResponse.put("error", errors);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleResourceNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
+        return buildError(HttpStatus.NOT_FOUND, ex.getMessage(), request, List.of());
     }
 
-    // handle/trap errors produced by @RequestBody annotation binding (e.g. no data sent in the request's body)
+    @ExceptionHandler({IllegalArgumentException.class, MethodArgumentTypeMismatchException.class, ConstraintViolationException.class})
+    public ResponseEntity<ApiErrorResponse> handleBadRequest(RuntimeException ex, HttpServletRequest request) {
+        return buildError(HttpStatus.BAD_REQUEST, ex.getMessage(), request, List.of());
+    }
 
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiErrorResponse> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest request) {
+        List<String> details = ex.getBindingResult().getFieldErrors().stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .sorted()
+                .toList();
+        return buildError(HttpStatus.BAD_REQUEST, "Validation failed.", request, details);
+    }
 
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiErrorResponse> handleUnreadable(HttpMessageNotReadableException ex, HttpServletRequest request) {
+        return buildError(HttpStatus.BAD_REQUEST, "Invalid request body.", request, List.of());
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiErrorResponse> handleUnexpected(Exception ex, HttpServletRequest request) {
+        return buildError(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred.", request, List.of());
+    }
+
+    private ResponseEntity<ApiErrorResponse> buildError(HttpStatus status, String message, HttpServletRequest request, List<String> details) {
+        ApiErrorResponse errorResponse = new ApiErrorResponse(
+                OffsetDateTime.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                message,
+                request.getRequestURI(),
+                details
+        );
+        return ResponseEntity.status(status).body(errorResponse);
+    }
 }

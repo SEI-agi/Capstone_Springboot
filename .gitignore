@@ -34,5 +34,12 @@ build/
 ### VS Code ###
 .vscode/
 
+# Local environment and secrets
+env.properties
+application-local.properties
+.env
+.env.*
+src/main/resources/application-local.properties
+
 ### Mac OS ###
 .DS_Store

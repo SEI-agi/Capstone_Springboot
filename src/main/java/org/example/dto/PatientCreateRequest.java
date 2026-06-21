@@ -1,0 +1,17 @@
+package org.example.dto;
+
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PastOrPresent;
+
+import java.time.LocalDate;
+
+public record PatientCreateRequest(
+        @NotNull Long userId,
+        String nextOfKinName,
+        String nextOfKinPhone,
+        String medicalNotes,
+        String prescriptionNotes,
+        @PastOrPresent LocalDate startDate,
+        @PastOrPresent LocalDate endDate
+) {
+}
