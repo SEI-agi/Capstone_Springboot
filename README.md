@@ -23,6 +23,9 @@ Set these before running locally:
 - `SPRING_JPA_HIBERNATE_DDL_AUTO`
 - `SPRING_JPA_SHOW_SQL`
 - `APP_CORS_ALLOWED_ORIGINS`
+
+Optional future AI placeholders:
+
 - `AI_PROVIDER`
 - `OPENAI_API_KEY`
 - `OPENAI_MODEL`
