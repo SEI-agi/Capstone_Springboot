@@ -44,12 +44,12 @@ SPRING_DATASOURCE_PASSWORD=your_password
 
 ## How to Run Locally
 1. Install Java 21 and Maven.
-2. Start MySQL.
-3. Set the environment variables above.
-4. Run the app:
+2. Copy [src/main/resources/application-local-example.properties](src/main/resources/application-local-example.properties) to the ignored [src/main/resources/application-local.properties](src/main/resources/application-local.properties) file for local demo use.
+3. Run the app with the local profile:
 ```bash
-mvn spring-boot:run
+mvn spring-boot:run -Dspring-boot.run.profiles=local
 ```
+4. If you want to use MySQL instead, keep the default profile and start MySQL first.
 
 ## How to Test Locally
 ```bash
